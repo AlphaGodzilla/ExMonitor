@@ -1,0 +1,12 @@
+venv
+.vscode/
+.DS_Store
+**/output/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+script/default.profraw
+default.profraw
