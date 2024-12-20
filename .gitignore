@@ -10,3 +10,6 @@ venv
 *.ipr
 script/default.profraw
 default.profraw
+
+*.sqlite
+*.db

@@ -77,14 +77,16 @@ def parse_date(value):
 
 
 if __name__ == '__main__':
-    okx = ccxt.okx()
-    okx.enableRateLimit = True
+    # okx = ccxt.okx()
+    # okx.enableRateLimit = True
     # okx.verbose = True
-    from_date = parse_date('2024-05-01')
+    bybit = ccxt.bybit()
+    bybit.verbose = True
+    from_date = parse_date('2024-10-28')
     today = parse_date(datetime.today())
     fetch_date = from_date
     # print("fetch_date, " + str(type(fetch_date)))
     # print("today, " + str(type(today)))
-    while fetch_date < today:
-        sync_ohlcv_by_date(okx, 'BTC/USDT:USDT', '1m', fetch_date)
+    while fetch_date <= today:
+        sync_ohlcv_by_date(bybit, 'GOAT/USDT:USDT', '1m', fetch_date)
         fetch_date += timedelta(days=1)
