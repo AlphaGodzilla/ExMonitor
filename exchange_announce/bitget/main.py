@@ -7,16 +7,12 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import parsel
-from curl_cffi import requests
 
 sys.path.append("..")
 from exchange_announce import article_downloader, repository
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
 current_dir = os.path.dirname(os.path.abspath(__file__))
 output_dir = os.path.join(current_dir, 'output', '')
-logging.info(f"创建数据保存目录: {output_dir}")
 ARTICLE_CACHE_PREFIX = "article_cache_"
 
 
@@ -58,7 +54,7 @@ def parse_article(url, name, html, db_conn):
                 base_coin = None
                 px_coin = None
                 for idx in range(0, len(tds), 2):
-                    print(f"{tds[idx]} ---> {tds[idx+1]}")
+                    # print(f"{tds[idx]} ---> {tds[idx + 1]}")
                     key = tds[idx]
                     val = tds[idx + 1]
                     if key == "上线时间":
@@ -67,17 +63,20 @@ def parse_article(url, name, html, db_conn):
                         dt = dt.astimezone(ZoneInfo("Asia/Shanghai"))
                         new_listing_time = int(dt.timestamp())
                     if key == "合约标的":
-                        base_coin = val.strip()
+                        base_coin = val.strip().upper()
                     if key == "结算资产":
-                        px_coin = val.strip()
+                        px_coin = val.strip().upper()
                 if db_conn is not None and base_coin is not None and px_coin is not None and new_listing_time is not None:
                     logging.info(
-                        f"该公告确认为合于上线公告，执行入库: {base_coin}-{px_coin}-SWAP, 上线时间: {new_listing_time}")
-                    repository.save_new_listing(db_conn, f"{base_coin}-{px_coin}-SWAP", "BITGET", new_listing_time, url)
+                        f"该公告确认为合约上线公告，执行入库: {base_coin}-{px_coin}-SWAP, 上线时间: {new_listing_time}")
+                    repository.save_new_listing(db_conn, name, f"{base_coin}-{px_coin}-SWAP", "BITGET",
+                                                new_listing_time, url)
                     db_conn.commit()
 
 
 def do_scrapy(retry_cnt: int):
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     NOW = datetime.now()
     NOW_UNIX_TS = int(NOW.timestamp())
     logging.info(f"执行BitGet上新公告抓取任务, 当前时间: {NOW}, ts: {NOW_UNIX_TS}, retry_cnt = {retry_cnt}")
@@ -100,10 +99,5 @@ def do_scrapy(retry_cnt: int):
     logging.info("结束")
 
 
-do_scrapy(0)
-
-if __name__ == "__main__":
-    file = "/Users/user/Desktop/AlphaGodzilla/ExMonitor/exchange_announce/bitget/output/20241206/article_cache_12560603819424.html"
-    with open(file, "r") as f:
-        content = f.read()
-        parse_article("https://www.bitget.com/zh-CN/support/articles/12560603819424", None, content, None)
+if __name__ == '__main__':
+    do_scrapy(0)

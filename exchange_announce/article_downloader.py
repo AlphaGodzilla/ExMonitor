@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from curl_cffi import requests
 
 
-def request_get(url, impersonate = "chrome"):
+def request_get(url, impersonate="chrome"):
     r = requests.get(
         url,
         impersonate=impersonate,
@@ -28,13 +28,52 @@ def request_get(url, impersonate = "chrome"):
     return r
 
 
+def first_cache_then_download_for_catalog(url: str,
+                                          output_dir,
+                                          catalog_cache_prefix: str,
+                                          catalog_html_cache_file,
+                                          now_ts: int,
+                                          impersonate="chrome"):
+    logging.info(f"尝试下载公告目录: {url}")
+    logging.info(f"创建数据保存目录: {output_dir}")
+    os.makedirs(os.path.dirname(output_dir), exist_ok=True)
+    catalog_content = None
+    with os.scandir(output_dir) as it:
+        for entry in it:
+            if entry.is_file() and entry.name.startswith(catalog_cache_prefix):
+                ts = entry.name.replace(catalog_cache_prefix, "").split(".")[0]
+                if ts is not None:
+                    # 缓存有效期1h
+                    if now_ts - int(ts) < 60 * 60:
+                        logging.info(f"一级目录还在缓存有效期内，读取本地缓存: {entry.path}")
+                        with open(entry.path, "r") as f:
+                            catalog_content = f.read()
+                            break
+                    else:
+                        logging.info(f"一级目录缓存失效，清理缓存文件 {entry.path}")
+                        os.remove(entry.path)
+    if catalog_content is not None and len(catalog_content) > 0:
+        return True, catalog_content
+    # 新请求
+    logging.info("一级目录还在缓存为空或失效，开始新请求")
+    resp = request_get(url, impersonate)
+    if resp.status_code < 200 or resp.status_code >= 300:
+        return False, catalog_content
+    cache_file = catalog_html_cache_file + str(now_ts) + ".html"
+    with open(cache_file, "w") as f:
+        catalog_content = resp.text
+        f.write(catalog_content)
+        logging.info(f"一级目录请求成功, 缓存结果 {cache_file}")
+    return False, catalog_content
+
+
 def first_cache_then_download(url: str,
                               output_dir,
                               article_cache_prefix: str,
                               article_title: str,
                               article_id: str,
                               release_time: int,
-                              impersonate = "chrome"):
+                              impersonate="chrome"):
     logging.info(f"尝试下载公告: {url}")
     release_datatime = datetime.fromtimestamp(int(release_time) / 1000, tz=ZoneInfo("Asia/Shanghai"))
     date = release_datatime.strftime("%Y%m%d")

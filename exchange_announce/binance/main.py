@@ -11,7 +11,7 @@ from curl_cffi import requests
 
 sys.path.append("..")
 from exchange_announce import repository
-from proc import get_token
+from .proc import get_token
 
 
 def do_request(url, token):
@@ -37,11 +37,8 @@ def do_request(url, token):
     return r
 
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
 current_dir = os.path.dirname(os.path.abspath(__file__))
 output_dir = os.path.join(current_dir, 'output', '')
-logging.info(f"创建数据保存目录: {output_dir}")
 os.makedirs(os.path.dirname(output_dir), exist_ok=True)
 
 WAF_TOKE_FILE = os.path.join(output_dir, 'waf_token.txt')
@@ -65,7 +62,7 @@ def parse_article(url, name, content, db_conn):
             break
 
     if match:
-        logging.info("发现U本位合约上新公告")
+        logging.info(f"发现U本位合约上新公告: {name}")
         first_table = selector.css("table:nth-of-type(1)").get()
         selector = parsel.Selector(text=first_table)
         items = selector.css("tr td .richtext-text ::text").getall()
@@ -77,17 +74,17 @@ def parse_article(url, name, content, db_conn):
             key = items[i]
             val = items[i + 1]
             if key == "U本位永续合约":
-                inst_id = val.strip()
+                inst_id = val.strip().upper()
             if key == "上线时间":
                 val = val.strip()
                 dt = datetime.strptime(val, "%Y年%m月%d日%H:%M（东八区时间）")
                 dt = dt.astimezone(ZoneInfo("Asia/Shanghai"))
                 new_listing_time = int(dt.timestamp())
             if key == "结算资产":
-                px_coin = val.strip()
+                px_coin = val.strip().upper()
                 if inst_id is not None:
                     base_coin = inst_id.replace(px_coin, "")
-        repository.save_new_listing(db_conn, f"{base_coin}-{px_coin}-SWAP", "BINANCE", new_listing_time, url)
+        repository.save_new_listing(db_conn, name, f"{base_coin}-{px_coin}-SWAP", "BINANCE", new_listing_time, url)
         db_conn.commit()
     else:
         logging.info(f"没有匹配上新合约交易对: {name}")
@@ -124,6 +121,8 @@ def follow_article_details(article, token, conn):
 
 
 def do_scrapy(retry_cnt: int):
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     NOW = datetime.now()
     NOW_UNIX_TS = int(NOW.timestamp())
     logging.info(f"执行Binance上新公告抓取任务, 当前时间: {NOW}, ts: {NOW_UNIX_TS}, retry_cnt = {retry_cnt}")
@@ -138,6 +137,8 @@ def do_scrapy(retry_cnt: int):
         logging.info(f"waf_token已获取: {token}")
         with open(WAF_TOKE_FILE, "w") as waf_token:
             waf_token.write(token)
+            logging.info("刷新文件缓冲区，确保文件写入磁盘")
+            waf_token.flush()
             logging.info("waf_token保存完成")
     catalog_url = "https://www.binance.com/zh-CN/support/announcement/new-cryptocurrency-listing?c=48&navId=48"
     logging.info(f"抓取上线列表一级目录: {catalog_url}, [优先读取缓存]")
@@ -148,7 +149,8 @@ def do_scrapy(retry_cnt: int):
             if entry.is_file() and entry.name.startswith(CATALOG_CACHE_PREFIX):
                 ts = entry.name.replace(CATALOG_CACHE_PREFIX, "").split(".")[0]
                 if ts is not None:
-                    if NOW_UNIX_TS - int(ts) < 60*60:
+                    # 缓存有效期1h
+                    if NOW_UNIX_TS - int(ts) < 60 * 60:
                         logging.info(f"一级目录还在缓存有效期内，读取本地缓存: {entry.path}")
                         with open(entry.path, "r") as f:
                             catalog_content = f.read()
@@ -157,7 +159,7 @@ def do_scrapy(retry_cnt: int):
                         logging.info(f"一级目录缓存失效，清理缓存文件 {entry.path}")
                         os.remove(entry.path)
 
-    if catalog_content is None:
+    if catalog_content is None or len(catalog_content) <= 0:
         logging.info("一级目录还在缓存为空或失效，开始新请求")
         r = do_request(catalog_url, token)
         cache_file = CATALOG_HTML_CACHE_FILE + str(NOW_UNIX_TS) + ".html"
@@ -179,7 +181,14 @@ def do_scrapy(retry_cnt: int):
     logging.info("开始解析一级目录")
     selector = parsel.Selector(text=catalog_content)
     script_app_data = selector.css("#__APP_DATA::text").get()
-    json_app_data = json.loads(script_app_data)
+    if len(script_app_data) <= 0:
+        logging.info("目标数据不存在，无法继续执行，请人工介入")
+        return
+    try:
+        json_app_data = json.loads(script_app_data)
+    except json.JSONDecodeError:
+        logging.info("目标数据无法解析文json，无法继续执行，请人工介入")
+        return
     articles = json_app_data['appState']["loader"]["dataByRouteId"]["d34e"]["catalogDetail"]["articles"]
 
     conn = repository.connect()
@@ -191,4 +200,5 @@ def do_scrapy(retry_cnt: int):
     logging.info("结束")
 
 
-do_scrapy(0)
+if __name__ == '__main__':
+    do_scrapy(0)
