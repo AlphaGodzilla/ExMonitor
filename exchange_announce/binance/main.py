@@ -11,7 +11,7 @@ from curl_cffi import requests
 
 sys.path.append("..")
 from exchange_announce import repository
-from .proc import get_token
+from exchange_announce.binance.proc import get_token
 
 
 def do_request(url, token):
@@ -38,7 +38,7 @@ def do_request(url, token):
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-output_dir = os.path.join(current_dir, 'output', '')
+output_dir = os.path.join(current_dir, '..', 'output', 'binance', '')
 os.makedirs(os.path.dirname(output_dir), exist_ok=True)
 
 WAF_TOKE_FILE = os.path.join(output_dir, 'waf_token.txt')

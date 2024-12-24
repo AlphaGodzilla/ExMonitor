@@ -12,7 +12,7 @@ sys.path.append("..")
 from exchange_announce import article_downloader, repository
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-output_dir = os.path.join(current_dir, 'output', '')
+output_dir = os.path.join(current_dir, '..', 'output', 'bitget', '')
 ARTICLE_CACHE_PREFIX = "article_cache_"
 
 

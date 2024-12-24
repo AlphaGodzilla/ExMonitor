@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 def connect():
-    return sqlite3.connect('database.sqlite')
+    return sqlite3.connect('output/database.sqlite')
 
 
 def save_new_listing(conn, title: str, symbol: str, exchange: str, time: int, url: str):
