@@ -25,12 +25,14 @@ def list_new_listing(conn, limit, exchange, symbol):
         where += " where exchange = ?"
         binds.append(exchange)
     if symbol is not None and len(where) > 0:
-        where += ", symbol = ?"
+        where += "and symbol = ?"
         binds.append(symbol)
     if symbol is not None and len(where) <= 0:
         where += " where symbol = ?"
         binds.append(symbol)
     binds.append(limit)
-    cursor.execute(f"select * from new_listing_symbol {where} order by created_at desc limit ?", binds)
+    sql = "select * from new_listing_symbol {} order by created_at desc limit ?".format(where)
+    print(sql)
+    cursor.execute(sql, binds)
     rows = cursor.fetchall()
     return [dict(row) for row in rows]
