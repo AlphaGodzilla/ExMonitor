@@ -43,7 +43,6 @@ def parse_article(title, html, url, db_conn):
                 dt = datetime.strptime(publish_time_str, "%Y-%m-%d %H:%M:%S UTC+8")
                 tz = ZoneInfo("Asia/Shanghai")
                 dt = dt.replace(tzinfo=tz)
-                dt = dt.astimezone(tz)
                 new_listing_time = int(dt.timestamp())
             logging.info(f"该公告确认为合约上线公告，执行入库: {base_coin}-USDT-SWAP, 上线时间: 已上线")
             repository.save_new_listing(db_conn, title, f"{base_coin}-USDT-SWAP", "GATE", new_listing_time, url)
