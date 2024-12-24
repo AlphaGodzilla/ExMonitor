@@ -67,7 +67,9 @@ def hello_world():
 @app.route("/new-listing", methods=['GET'])
 def new_listing():
     limit = request.args.get('limit', default=10, type=int)
-    rows = repository.list_new_listing(get_db(), limit)
+    exchange = request.args.get('exchange', type=str)
+    symbol = request.args.get('exchange', type=str)
+    rows = repository.list_new_listing(get_db(), limit, exchange, symbol)
     return jsonify(rows)
 
 

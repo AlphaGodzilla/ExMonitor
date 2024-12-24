@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+import jinja2
 
 
 def connect():
@@ -16,10 +17,20 @@ def save_new_listing(conn, title: str, symbol: str, exchange: str, time: int, ur
     ''', (title, symbol, exchange, time, url, now, now, title, time, url, now, symbol, exchange))
 
 
-def list_new_listing(conn, limit):
+def list_new_listing(conn, limit, exchange, symbol):
     cursor = conn.cursor()
-    cursor.execute('''
-    select * from new_listing_symbol order by created_at desc limit ?
-    ''', (limit,))
+    where = ""
+    binds = []
+    if exchange is not None:
+        where += " where exchange = ?"
+        binds.append(exchange)
+    if symbol is not None and len(where) > 0:
+        where += ", symbol = ?"
+        binds.append(symbol)
+    if symbol is not None and len(where) <= 0:
+        where += " where symbol = ?"
+        binds.append(symbol)
+    binds.append(limit)
+    cursor.execute(f"select * from new_listing_symbol {where} order by created_at desc limit ?", binds)
     rows = cursor.fetchall()
     return [dict(row) for row in rows]
