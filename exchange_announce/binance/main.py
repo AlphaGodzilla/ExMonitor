@@ -78,7 +78,9 @@ def parse_article(url, name, content, db_conn):
             if key == "上线时间":
                 val = val.strip()
                 dt = datetime.strptime(val, "%Y年%m月%d日%H:%M（东八区时间）")
-                dt = dt.astimezone(ZoneInfo("Asia/Shanghai"))
+                tz = ZoneInfo("Asia/Shanghai")
+                dt = dt.replace(tzinfo=tz)
+                dt = dt.astimezone(tz)
                 new_listing_time = int(dt.timestamp())
             if key == "结算资产":
                 px_coin = val.strip().upper()

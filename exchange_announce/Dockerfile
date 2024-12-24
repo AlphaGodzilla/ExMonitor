@@ -1,4 +1,5 @@
 FROM python:3.12.5
+ENV TZ Asia/Shanghai
 WORKDIR /data/exchange_announce
 COPY . .
 RUN apt update && apt install sqlite3 -y && pip install -r requirements.txt
