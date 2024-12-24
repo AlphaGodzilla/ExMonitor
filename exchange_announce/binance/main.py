@@ -150,8 +150,8 @@ def do_scrapy(retry_cnt: int):
             if entry.is_file() and entry.name.startswith(CATALOG_CACHE_PREFIX):
                 ts = entry.name.replace(CATALOG_CACHE_PREFIX, "").split(".")[0]
                 if ts is not None:
-                    # 缓存有效期1h
-                    if NOW_UNIX_TS - int(ts) < 60 * 60:
+                    # 缓存有效期1m
+                    if NOW_UNIX_TS - int(ts) < 60:
                         logging.info(f"一级目录还在缓存有效期内，读取本地缓存: {entry.path}")
                         with open(entry.path, "r") as f:
                             catalog_content = f.read()

@@ -44,7 +44,7 @@ def first_cache_then_download_for_catalog(url: str,
                 ts = entry.name.replace(catalog_cache_prefix, "").split(".")[0]
                 if ts is not None:
                     # 缓存有效期1h
-                    if now_ts - int(ts) < 60 * 60:
+                    if now_ts - int(ts) < 60:
                         logging.info(f"一级目录还在缓存有效期内，读取本地缓存: {entry.path}")
                         with open(entry.path, "r") as f:
                             catalog_content = f.read()
