@@ -6,6 +6,7 @@ import re
 import sys
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import parsel
 
@@ -60,6 +61,39 @@ def parse_article(url, title, html, db_conn):
                         repository.save_new_listing(db_conn, title, f"{base_coin}-USDT-SWAP", "BYBIT", new_listing_time,
                                                     url)
                         db_conn.commit()
+                else:
+                    pattern = r"((\d{4})\s*年\s*(\d{2})\s*月\s*(\d{2})\s*日(\d{2}):(\d{2}))\s*UTC\s*上線\s*(\w+)USDT\s*永續合約"
+                    match = re.findall(pattern, desc)
+                    if match:
+                        base_coin = None
+                        year = None
+                        month = None
+                        day = None
+                        hour = None
+                        minute = None
+                        logging.info("疑似该公告为合约上线公告?, 进一步解析明细表")
+                        for group in match:
+                            if group is not None and len(group) >= 7:
+                                year = group[1]
+                                month = group[2]
+                                day = group[3]
+                                hour = group[4]
+                                minute = group[5]
+                                base_coin = group[6]
+                        if base_coin is not None:
+                            utc_tz = ZoneInfo("UTC")
+                            dt = datetime.now().replace(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute), tzinfo=utc_tz)
+                            dt = dt.astimezone(ZoneInfo("Asia/Shanghai"))
+                            new_listing_time = int(dt.timestamp())
+                            logging.info(
+                                f"该公告确认为合约上线公告，执行入库: {base_coin}-USDT-SWAP, 上线时间: {new_listing_time}")
+                            repository.save_new_listing(db_conn, title, f"{base_coin}-USDT-SWAP", "BYBIT", new_listing_time,
+                                                        url)
+                            db_conn.commit()
+
+
+
+
 
 
 def do_scrapy(retry_cnt: int):
