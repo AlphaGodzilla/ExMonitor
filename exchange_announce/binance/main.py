@@ -46,6 +46,8 @@ CATALOG_CACHE_PREFIX = "catalog_cache_"
 CATALOG_HTML_CACHE_FILE = os.path.join(output_dir, CATALOG_CACHE_PREFIX)
 ARTICLE_CACHE_PREFIX = "article_cache_"
 
+logger = logging.getLogger(__name__)
+
 
 def parse_article(url, name, content, db_conn):
     logging.info(f"开始解析公告内容: {name}")
@@ -122,7 +124,7 @@ def follow_article_details(article, token, conn):
 
 
 def do_scrapy(retry_cnt: int):
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [%(pathname)s:%(lineno)d]: %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     NOW = datetime.now()
     NOW_UNIX_TS = int(NOW.timestamp())

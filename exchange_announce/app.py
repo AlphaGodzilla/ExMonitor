@@ -15,7 +15,7 @@ from exchange_announce import repository
 
 app = Flask(__name__)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(threadName)s] - %(message)s',
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [%(pathname)s:%(lineno)d]: %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 

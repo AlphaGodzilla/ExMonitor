@@ -76,7 +76,7 @@ def parse_article(url, name, html, db_conn):
 
 
 def do_scrapy(retry_cnt: int):
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [%(pathname)s:%(lineno)d]: %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     NOW = datetime.now()
     NOW_UNIX_TS = int(NOW.timestamp())
